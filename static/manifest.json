@@ -1,0 +1,23 @@
+{
+    "name": "SIPocracy Phone",
+    "short_name": "SIPocracy",
+    "start_url": "/phone.html",
+    "display": "standalone",
+    "background_color": "#212529",
+    "theme_color": "#0d6efd",
+    "description": "A free and open-source SIP web client",
+    "id": "/phone.html",
+    "icons": [
+        {
+            "src": "/static/img/vintage-phone.png",
+            "sizes": "1024x1024",
+            "type": "image/png"
+        }
+    ],
+    "protocol_handlers": [
+        {
+            "protocol": "sip",
+            "url": "/phone.html?sip=%s"
+        }
+    ]
+}
