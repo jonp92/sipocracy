@@ -407,8 +407,10 @@ function renderCallHistoryItem(callInfo, direction = 'outgoing') {
   }
   const callHistory = document.getElementById('callHistoryList');
   const callItem = document.createElement('li');
-  callItem.className = 'list-group-item d-flex justify-content-between align-items-center';
-
+  callItem.className = 'list-group-item d-flex justify-content-between align-items-center call-history-item';
+  if (direction === 'missed') {
+    callItem.classList.add('missed'); // Add class for missed calls
+  }
   const callDate = new Date(callInfo.time);
   const now = new Date();
   const yesterday = new Date(now);

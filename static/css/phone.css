@@ -112,6 +112,10 @@ body {
     overflow-y: auto;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
+.call-history-item.missed {
+    background-color: rgba(253, 72, 72, 0.465);
+    color: #fff;
+}
 .nav {
     border-color: var(--bs-primary);
     padding-top: 10px; /* Add padding to the top of the nav for notification badge */
