@@ -52,6 +52,9 @@ let firstLoad = true; // Flag to prevent duplicate entries in call history
 let loggingOut = false; // Flag to prevent multiple logout attempts
 let onHold = false; // Flag to track hold state
 let isMuted = false; // Flag to track mute state
+let missedCalls = false; // Flag to track missed calls
+let numMissedCalls = 0; // Counter for missed calls
+let ringerEnabled = true; // Flag to track if ringer is enabled
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
@@ -160,7 +163,9 @@ function cleanupMedia() {
 }
 
 function onInvite(invitation) {
-  playAudio('static/wav/unique_ringtone.wav', true); // Play custom ringtone
+  if (ringerEnabled) {
+    playAudio('static/wav/unique_ringtone.wav', true); // Play custom ringtone
+  }
   updateStatusLed('ringing');
   session = invitation;
   notifyIncomingCall(invitation);
@@ -173,6 +178,7 @@ function onInvite(invitation) {
         setupRemoteMedia(invitation);
         break;
       case SIP.SessionState.Terminating:
+        logger.debug('Session is terminating');
       case SIP.SessionState.Terminated:
         cleanupMedia();
         session = null;
@@ -346,6 +352,16 @@ function getStoredLoginDetails() {
   return { sipUser, sipPass, sipServer, wssServer };
 }
 
+function incrementMissedCallCount() {
+  missedCalls = true;
+  numMissedCalls++;
+  const missedCallsBadge = document.getElementById('missedCallsBadge');
+  if (missedCallsBadge) {
+    missedCallsBadge.textContent = numMissedCalls;
+    missedCallsBadge.classList.remove('d-none');
+  }
+}
+
 function callHistoryHandler(callInfo) {
   // Only add if not already present
   if (storedCalls.some(call => call.number === callInfo.number && call.time === callInfo.time)) {
@@ -354,9 +370,13 @@ function callHistoryHandler(callInfo) {
   }
   storedCalls.push(callInfo);
   const direction = callInfo.direction || 'outgoing'; // Default to 'outgoing' if not specified
+  if (direction === 'missed') {
+    incrementMissedCallCount(); // Increment missed call count if this is a missed call
+  }
   localStorage.setItem('callHistory', JSON.stringify(storedCalls));
   renderCallHistoryItem(callInfo, direction);
 }
+
 
 function renderCallHistoryItem(callInfo, direction = 'outgoing') {
   let iconClass = null;
@@ -837,8 +857,11 @@ document.addEventListener('DOMContentLoaded', () => {
   storedCalls.forEach(call => {
     renderCallHistoryItem(call);
   });
+
   firstLoad = false;
   logger.debug(`Loading SIP UserAgent with host: ${userAgent.configuration.uri.host}`);
+
+
   setInterval(() => {
     if (userAgent && userAgent.state === SIP.UserAgentState.Started && session) {
       // logger.debug(`Current session ID: ${session._id}`);
