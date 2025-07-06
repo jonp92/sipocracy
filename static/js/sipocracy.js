@@ -821,6 +821,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  accountName.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    logger.debug('Account name context menu opened');
+    const download = confirm('Download Support Log?');
+    if (download) {
+      logger.downloadLogs(true); // Download log file
+    }
+  });
+
   init();
   loadContacts();
   const callHistoryList = document.getElementById('callHistoryList');
