@@ -164,12 +164,14 @@ function cleanupMedia() {
 
 function onInvite(invitation) {
   if (ringerEnabled) {
-    playAudio('static/wav/unique_ringtone.wav', true); // Play custom ringtone
+    playAudio('static/wav/ringtones/unique_ringtone.wav', true); // Play custom ringtone
   }
   updateStatusLed('ringing');
   session = invitation;
   notifyIncomingCall(invitation);
-  callerIdElement.textContent = session.remoteIdentity.displayName || session.remoteIdentity.uri.toString();
+  const callerID = session.remoteIdentity.displayName || session.remoteIdentity.uri.toString();
+  callerIdElement.textContent = callerID;
+  logger.info(`Incoming call from: ${callerID}`);
   invitation.stateChange.addListener((state) => {
     logger.info(`Session state changed to ${state}`);
     switch (state) {
@@ -216,7 +218,9 @@ function playAudio(audioFile, loop = false, stop = false) {
 
 function makeCall(uri) {
   const target = SIP.UserAgent.makeURI(uri);
-  callerIdElement.textContent = target.displayName || target.toString();
+  const callerId = target.displayName || target.toString();
+  callerIdElement.textContent = callerId;
+  logger.info(`Making call to: ${callerId}`);
   const inviter = new SIP.Inviter(userAgent, target);
   session = inviter; // <-- Set session for outgoing call
   inviter.stateChange.addListener((state) => {
@@ -359,6 +363,16 @@ function incrementMissedCallCount() {
   if (missedCallsBadge) {
     missedCallsBadge.textContent = numMissedCalls;
     missedCallsBadge.classList.remove('d-none');
+  }
+}
+
+function resetMissedCallCount() {
+  missedCalls = false;
+  numMissedCalls = 0;
+  const missedCallsBadge = document.getElementById('missedCallsBadge');
+  if (missedCallsBadge) {
+    missedCallsBadge.textContent = '';
+    missedCallsBadge.classList.add('d-none');
   }
 }
 
@@ -627,7 +641,7 @@ function init() {
   };
   userAgent = new SIP.UserAgent(userAgentOptions);
 
-  remoteStream = new MediaStream();
+  
 
   userAgent.stateChange.addListener((state) => {
     logger.info(`UserAgent state changed to ${state}`);
@@ -700,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
   logger.debug('Document loaded, initializing SIP UserAgent');
   registerServiceWorker();
   checkPermissions();
-
+  remoteStream = new MediaStream();
   notificationTickler.addEventListener('click', () => {
     setNotificationPermission();
   });
@@ -843,6 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   accountName.addEventListener('contextmenu', (event) => {
     event.preventDefault();
+    accountManager.classList.toggle('show');
     logger.debug('Account name context menu opened');
     const download = confirm('Download Support Log?');
     if (download) {
@@ -857,7 +872,14 @@ document.addEventListener('DOMContentLoaded', () => {
   storedCalls.forEach(call => {
     renderCallHistoryItem(call);
   });
-
+  contactListBtn.addEventListener('click', () => {
+    logger.debug('Contact list tab clicked');
+    resetMissedCallCount();
+  });
+  dialerTabBtn.addEventListener('click', () => {
+    logger.debug('Dialer tab clicked');
+    resetMissedCallCount();
+  });
   firstLoad = false;
   logger.debug(`Loading SIP UserAgent with host: ${userAgent.configuration.uri.host}`);
 
@@ -871,7 +893,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (remoteStream) {
         for (const track of remoteStream.getTracks()) {
           // logger.debug(`Remote track: ${track.kind} - ${track.label}`);
-          logger.debug(`Track stats:`, `Minimum Latency: ${track.stats.minimumLatency}, Latency: ${track.stats.latency}, Maximum Latency: ${track.stats.maximumLatency}, Average Latency: ${track.stats.averageLatency}`);
+          const debugMsg = (`Track stats:`, `Minimum Latency: ${track.stats.minimumLatency}, Latency: ${track.stats.latency}, Maximum Latency: ${track.stats.maximumLatency}, Average Latency: ${track.stats.averageLatency}`);
+          logger.debug(debugMsg);
           if (!callNetStats.classList.contains('d-none')) {
             callNetStats.innerHTML = `
               <div class="row">
