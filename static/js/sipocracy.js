@@ -1,5 +1,7 @@
-// Constants
 import { logMe } from './logme.js'; // Import the logging class
+
+// Constants
+const statsPolling = true;
 const logger = new logMe("sipocracy", "debug"); // Initialize logger with name and log level
 const sipLogLevel = "error"; // Set SIP.js log level
 const mediaElement = document.getElementById('mediaElement');
@@ -55,6 +57,7 @@ let isMuted = false; // Flag to track mute state
 let missedCalls = false; // Flag to track missed calls
 let numMissedCalls = 0; // Counter for missed calls
 let ringerEnabled = true; // Flag to track if ringer is enabled
+let statPollingInterval = null; // For stats polling
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
@@ -872,7 +875,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const callHistoryList = document.getElementById('callHistoryList');
   callHistoryList.innerHTML = ''; // Clear any existing items
   storedCalls.forEach(call => {
-    renderCallHistoryItem(call);
+    // Always use the stored direction, default to 'outgoing' if missing
+    renderCallHistoryItem(call, call.direction || 'outgoing');
   });
   contactListBtn.addEventListener('click', () => {
     logger.debug('Contact list tab clicked');
@@ -885,37 +889,38 @@ document.addEventListener('DOMContentLoaded', () => {
   firstLoad = false;
   logger.debug(`Loading SIP UserAgent with host: ${userAgent.configuration.uri.host}`);
 
-
-  setInterval(() => {
-    if (userAgent && userAgent.state === SIP.UserAgentState.Started && session) {
-      // logger.debug(`Current session ID: ${session._id}`);
-      // logger.debug(`Current session state: ${session.state}`);
-      // logger.debug(`Remote Identity: ${session.remoteIdentity.uri.toString()}`);
-      // logger.debug(`Remote Display Name: ${session.remoteIdentity.displayName || 'N/A'}`);
-      if (remoteStream) {
-        for (const track of remoteStream.getTracks()) {
-          // logger.debug(`Remote track: ${track.kind} - ${track.label}`);
-          const debugMsg = (`Track stats:`, `Minimum Latency: ${track.stats.minimumLatency}, Latency: ${track.stats.latency}, Maximum Latency: ${track.stats.maximumLatency}, Average Latency: ${track.stats.averageLatency}`);
-          logger.debug(debugMsg);
-          if (!callNetStats.classList.contains('d-none')) {
-            callNetStats.innerHTML = `
-              <div class="row">
-                <div class="col-3">Min:</div>
-                <div class="col-3">Average:</div>
-                <div class="col-3">Latency:</div>
-                <div class="col-3">Max:</div>
-              </div>
-              <div class="row">
-                <div class="col-3">${track.stats.minimumLatency}</div>
-                <div class="col-3">${track.stats.averageLatency}</div>
-                <div class="col-3">${track.stats.latency}</div>
-                <div class="col-3">${track.stats.maximumLatency}</div>
-              </div>
-              `;
+  if (statsPolling) {
+    logger.debug('Starting stats polling');
+    statPollingInterval = setInterval(() => {
+      if (userAgent && userAgent.state === SIP.UserAgentState.Started && session) {
+        // logger.debug(`Current session ID: ${session._id}`);
+        // logger.debug(`Current session state: ${session.state}`);
+        // logger.debug(`Remote Identity: ${session.remoteIdentity.uri.toString()}`);
+        // logger.debug(`Remote Display Name: ${session.remoteIdentity.displayName || 'N/A'}`);
+        if (remoteStream) {
+          for (const track of remoteStream.getTracks()) {
+            // logger.debug(`Remote track: ${track.kind} - ${track.label}`);
+            const debugMsg = (`Track stats:`, `Minimum Latency: ${track.stats.minimumLatency}, Latency: ${track.stats.latency}, Maximum Latency: ${track.stats.maximumLatency}, Average Latency: ${track.stats.averageLatency}`);
+            logger.debug(debugMsg);
+            if (!callNetStats.classList.contains('d-none')) {
+              callNetStats.innerHTML = `
+                <div class="row">
+                  <div class="col-3">Min:</div>
+                  <div class="col-3">Average:</div>
+                  <div class="col-3">Latency:</div>
+                  <div class="col-3">Max:</div>
+                </div>
+                <div class="row">
+                  <div class="col-3">${track.stats.minimumLatency}</div>
+                  <div class="col-3">${track.stats.averageLatency}</div>
+                  <div class="col-3">${track.stats.latency}</div>
+                  <div class="col-3">${track.stats.maximumLatency}</div>
+                </div>
+                `;
+            }
           }
         }
       }
-    }
-  }, 1000); // Check every 1 second
-
+    }, 1000); // Check every 1 second
+  }
 });

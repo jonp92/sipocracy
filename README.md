@@ -48,6 +48,7 @@ SIPocracy is a free and open-source SIP web client that allows you to make and r
 - Edit JavaScript and CSS in the `static/` directory.
 - Use the built-in logging utility for debugging (`window.getLogs()`, `window.downloadLogs()`).
 - Customize the UI with Bootstrap and your own styles.
+- Call stats can be enabled via the statsPolling variable in sipocracy.js
 
 ## License
 MIT License

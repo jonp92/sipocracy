@@ -112,9 +112,8 @@ body {
     overflow-y: auto;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-.call-history-item.missed {
-    background-color: rgba(253, 72, 72, 0.465);
-    color: #fff;
+.call-history-item.missed i {
+    color: var(--bs-danger);
 }
 .nav {
     border-color: var(--bs-primary);
