@@ -40,7 +40,7 @@
 				</div>
 			</div>
 
-            <div class="mb-2" id="tabs">
+            <div id="tabs">
                 <ul class="nav nav-tabs nav-justified" id="phoneTabs" role="tablist">
                     <li class="nav-item" role="presentation" id="callHistoryTabItem">
                         <button class="nav-link active position-relative" id="callHistoryTab" data-bs-toggle="tab" data-bs-target="#callHistoryContainer" type="button" role="tab" aria-controls="callHistoryContainer" aria-selected="true" title="Call History">
@@ -77,13 +77,21 @@
                         </button>
                     </li>
                 </ul>
-                <div class="tab-content mt-3">
+                <div class="tab-content mt-2">
                     <div class="tab-pane fade show active" id="callHistoryContainer" role="tabpanel" aria-labelledby="callHistoryTab">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Call History</h5>
+                            <button id="clearHistoryBtn" class="btn btn-danger btn-sm" title="Clear Call History"><i class="bi bi-trash"></i></button>
+                        </div>
                         <ul id="callHistoryList" class="list-group callHistory">
                             <!-- Call history items will be dynamically added here -->
                         </ul>
                     </div>
                     <div class="tab-pane fade" id="contactsContainer" role="tabpanel" aria-labelledby="contactsTab">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Contacts</h5>
+                            <button id="addContactBtn" class="btn btn-primary btn-sm" title="Add Contact"><i class="bi bi-plus-circle"></i></button>
+                        </div>
                         <ul id="contactsList" class="list-group contacts">
                             <!-- Contacts items will be dynamically added here -->
                         </ul>
@@ -142,7 +150,7 @@
                 </div>
             </div>
 
-			<div class="footer d-flex flex-row justify-content-between align-items-center fixed-bottom pb-3 px-4">
+			<div class="footer d-flex flex-row justify-content-between align-items-center py-2" id="footer">
 				<div class="status-led connected">
                     <div class="account-manager" id="accountManager">
                         <span class="account-name" id="accountName">Not logged in</span>

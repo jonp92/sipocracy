@@ -90,7 +90,7 @@ body {
 
 /* Show when active */
 .collapsible.show {
-    max-height: 500px; /* or a value larger than your content's height */
+    max-height: 800px; /* or a value larger than your content's height */
     opacity: 1;
     margin-top: 1rem !important;
     margin-bottom: 1rem !important;
@@ -108,9 +108,9 @@ body {
     
 }
 .callHistory {
-    max-height: 250px;
+    max-height: 500px;
     overflow-y: auto;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.259);
 }
 .call-history-item.missed i {
     color: var(--bs-danger);
@@ -159,6 +159,14 @@ body {
     opacity: 1;
     transform: scale(1);
     pointer-events: auto;
+}
+
+.footer {
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    padding: 1em;
 }
 
 .fs-12 {
