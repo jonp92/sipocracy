@@ -43,6 +43,9 @@ const accountName = document.getElementById('accountName');
 const logoutButton = document.getElementById('logoutBtn');
 const sipSettingsButton = document.getElementById('sipSettingsBtn');
 const callNetStats = document.getElementById('callNetStats');
+const addContactBtn = document.getElementById('addContactBtn');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const contactContextMenu = document.getElementById('contactContextMenu');
 const audio = new Audio();
 
 // Global variables
@@ -455,6 +458,19 @@ function renderCallHistoryItem(callInfo, direction = 'outgoing') {
   });
 }
 
+function clearCallHistory() {
+  if (confirm("Are you sure you want to clear the call history?")) {
+    storedCalls.length = 0; // Clear the stored calls array
+    localStorage.removeItem('callHistory'); // Remove from localStorage
+    const callHistoryList = document.getElementById('callHistoryList');
+    callHistoryList.innerHTML = ''; // Clear the displayed call history
+    resetMissedCallCount(); // Reset missed call count
+    logger.info("Call history cleared.");
+  } else {
+    logger.info("Call history clear operation cancelled.");
+  }
+}
+
 function notifyIncomingCall(invitation) {
   const caller = invitation.remoteIdentity.uri.toString();
   if (Notification.permission === 'granted' && navigator.serviceWorker.controller) {
@@ -568,6 +584,52 @@ function renderContact(contact) {
     <span class="contactNumber">${contact.number}</span>
     <button class="btn btn-primary btn-sm callContactBtn">Call</button>
   `;
+  contactItem.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      console.log('Context menu triggered for contact:', contact.name);
+      contactContextMenu.classList.remove('d-none');
+
+      // Calculate position
+      let left = e.pageX;
+      let top = e.pageY;
+  
+      // Get menu and viewport dimensions
+      const menuRect = contactContextMenu.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+  
+      // Adjust if menu would overflow right edge
+      if (left + menuRect.width > viewportWidth) {
+          left = viewportWidth - menuRect.width - 10; // 10px padding
+      }
+      // Adjust if menu would overflow bottom edge
+      if (top + menuRect.height > viewportHeight) {
+          top = viewportHeight - menuRect.height - 10; // 10px padding
+      }
+      // Prevent negative values
+      left = Math.max(0, left);
+      top = Math.max(0, top);
+  
+      contactContextMenu.style.left = `${left}px`;
+      contactContextMenu.style.top = `${top}px`;
+      contactContextMenu.querySelector('#callContactBtn').onclick = () => {
+        makeCall(contact.number);
+        contactContextMenu.classList.add('d-none'); // Hide context menu after action
+      };
+      contactContextMenu.querySelector('#editContactBtn').onclick = () => {
+        logger.info(`Editing contact: ${contact.name}`);
+        contactContextMenu.classList.add('d-none'); // Hide context menu after action
+      };
+      contactContextMenu.querySelector('#deleteContactBtn').onclick = () => {
+        const contacts = JSON.parse(localStorage.getItem('contacts')) || [];
+        const updatedContacts = contacts.filter(c => c.number !== contact.number);
+        localStorage.setItem('contacts', JSON.stringify(updatedContacts));
+        contactItem.remove(); // Remove from UI
+        contactContextMenu.classList.add('d-none'); // Hide context menu after action
+        logger.info(`Deleted contact: ${contact.name}`);
+      };
+
+  });
   contactsList.appendChild(contactItem);
   const callButton = contactItem.querySelector('.callContactBtn');
   callButton.addEventListener('click', () => {
@@ -720,9 +782,12 @@ document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
   checkPermissions();
   remoteStream = new MediaStream();
+
+  // Event listeners
   notificationTickler.addEventListener('click', () => {
     setNotificationPermission();
   });
+
   sipLoginButton.addEventListener('click', () => {
     const sipUser = document.getElementById('sipUser').value.trim();
     const sipPass = document.getElementById('sipPass').value.trim();
@@ -741,7 +806,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loginModal.hide();
     init();
   });
-    dtmfButtons.forEach(button => {
+
+  dtmfButtons.forEach(button => {
     button.addEventListener('click', () => {
       let signal = button.textContent.trim();
       // if (signal === '*') {
@@ -870,6 +936,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  contactListBtn.addEventListener('click', () => {
+    logger.debug('Contact list tab clicked');
+    resetMissedCallCount();
+  });
+
+  dialerTabBtn.addEventListener('click', () => {
+    logger.debug('Dialer tab clicked');
+    resetMissedCallCount();
+  });
+
+  clearHistoryBtn.addEventListener('click', () => {
+    clearCallHistory();
+  });
+
+  document.addEventListener('click', () => {
+    contactContextMenu.classList.add('d-none'); // Hide context menu on outside click
+  });
+
   init();
   loadContacts();
   const callHistoryList = document.getElementById('callHistoryList');
@@ -878,19 +962,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Always use the stored direction, default to 'outgoing' if missing
     renderCallHistoryItem(call, call.direction || 'outgoing');
   });
-  contactListBtn.addEventListener('click', () => {
-    logger.debug('Contact list tab clicked');
-    resetMissedCallCount();
-  });
-  dialerTabBtn.addEventListener('click', () => {
-    logger.debug('Dialer tab clicked');
-    resetMissedCallCount();
-  });
+
+
   firstLoad = false;
   logger.debug(`Loading SIP UserAgent with host: ${userAgent.configuration.uri.host}`);
 
   if (statsPolling) {
     logger.debug('Starting stats polling');
+    callNetStats.classList.remove('d-none'); // Hide stats initially
     statPollingInterval = setInterval(() => {
       if (userAgent && userAgent.state === SIP.UserAgentState.Started && session) {
         // logger.debug(`Current session ID: ${session._id}`);

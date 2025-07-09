@@ -88,6 +88,11 @@
                         </ul>
                     </div>
                     <div class="tab-pane fade" id="contactsContainer" role="tabpanel" aria-labelledby="contactsTab">
+                        <div class="contactcontextmenu d-none" id="contactContextMenu">
+                            <div class="contactcontextmenu-item" id="callContactBtn" title="Call"><i class="bi bi-telephone"></i> Call</div>
+                            <div class="contactcontextmenu-item" id="editContactBtn" title="Edit"><i class="bi bi-pencil"></i> Edit</div>
+                            <div class="contactcontextmenu-item text-danger" id="deleteContactBtn" title="Delete"><i class="bi bi-trash"></i> Delete</div>
+                        </div>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="mb-0">Contacts</h5>
                             <button id="addContactBtn" class="btn btn-primary btn-sm" title="Add Contact"><i class="bi bi-plus-circle"></i></button>
@@ -95,6 +100,7 @@
                         <ul id="contactsList" class="list-group contacts">
                             <!-- Contacts items will be dynamically added here -->
                         </ul>
+
                     </div>
                     <div class="tab-pane fade" id="dialerContainer" role="tabpanel" aria-labelledby="dialerTab">
                         <div id="dtmfButtons" class="rounded border p-3 mx-auto">
