@@ -91,6 +91,39 @@ export class logMe {
     }
 
     /**
+     * Internal: Get caller location from stack trace.
+     * @returns {string}
+     */
+    getCallerLocation() {
+        const err = new Error();
+        if (!err.stack) return '';
+        const stackLines = err.stack.split('\n');
+        // Find the first stack line that does NOT reference logMe
+        for (let i = 2; i < stackLines.length; i++) {
+            if (!/logMe\./.test(stackLines[i]) && !/logme\.js/.test(stackLines[i])) {
+                const caller = stackLines[i].trim();
+                // Extract the file name and line number
+                // Example: at myFunction (http://localhost:8000/static/js/app.js:123:45)
+                const match = caller.match(/at (.+?) \((.+\/)?([^\/]+):(\d+):\d+\)/);
+                if (match) {
+                    // match[3] = filename, match[4] = line number
+                    return `${match[3]}:${match[4]}`;
+                }
+                // Fallback if no match found
+                // Try to match: at http://localhost:8000/static/js/app.js:123:45
+                const altMatch = caller.match(/at (.+\/)?([^\/]+):(\d+):\d+/);
+                if (altMatch) {
+                    // altMatch[2] = filename, altMatch[3] = line number
+                    return `${altMatch[2]}:${altMatch[3]}`;
+                }
+                return caller.replace(/at /, '').trim(); // Just return the line as is
+            }
+        }
+        // Fallback to the last line if nothing found
+        return stackLines[stackLines.length - 1].trim();
+    }
+    
+    /**
      * Determine if a message should be logged at the given level.
      * @param {string} level
      * @returns {boolean}
@@ -106,12 +139,13 @@ export class logMe {
      * @param {string} [level=this.logLevel]
      */
     writeLog(message, level = this.logLevel) {
+        const location = this.getCallerLocation();
         if (this.localStorage && this.shouldLog(level)) {
             const logs = JSON.parse(localStorage.getItem(this.storageKey)) || [];
-            logs.push({ date: this.date, time: new Date().toLocaleTimeString(), level, message });
+            logs.push({ date: this.date, time: new Date().toLocaleTimeString(), level, message, location });
             localStorage.setItem(this.storageKey, JSON.stringify(logs));
         }
-        this.log(message, level);
+        this.log(`${message} (${location})`, level);
     }
 
     /**

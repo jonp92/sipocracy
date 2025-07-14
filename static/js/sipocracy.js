@@ -2,8 +2,9 @@ import { logMe } from './logme.js'; // Import the logging class
 
 // Constants
 const statsPolling = true;
+const debug = true; // Enable debug mode for detailed logging
 const logger = new logMe("sipocracy", "debug"); // Initialize logger with name and log level
-const sipLogLevel = "error"; // Set SIP.js log level
+const sipLogLevel = "info"; // Set SIP.js log level
 const mediaElement = document.getElementById('mediaElement');
 const statusLed = document.querySelector('.status-led');
 const storedCalls = JSON.parse(localStorage.getItem('callHistory')) || [];
@@ -21,7 +22,7 @@ const transferButton = document.getElementById('transferBtn');
 const conferenceButton = document.getElementById('conferenceBtn');
 const hangupButton = document.getElementById('hangupBtn');
 const durationElement = document.getElementById('callDuration');
-const tabs = document.getElementById('tabs');
+// const tabs = document.getElementById('tabs');
 const callHistoryContainer = document.getElementById('callHistoryContainer');
 const loginModalEl = document.getElementById('loginModal');
 const loginModal = new bootstrap.Modal(loginModalEl, {});
@@ -31,11 +32,11 @@ const callControls = document.getElementById('phoneTabItem');
 const callActionButtons = document.getElementById('callActionButtons');
 const callControlButtons = document.getElementById('callControlButtons');
 const contactsList = document.getElementById('contactsList');
-const contactListTab = document.getElementById('contactsTabItem');
+// const contactListTab = document.getElementById('contactsTabItem');
 const contactListBtn = document.getElementById('contactsTab');
-const callHistoryTab = document.getElementById('callHistoryTabItem');
+// const callHistoryTab = document.getElementById('callHistoryTabItem');
 const callHistoryBtn = document.getElementById('callHistoryTab');
-const dialerTab = document.getElementById('dialerTabItem');
+// const dialerTab = document.getElementById('dialerTabItem');
 const dialerTabBtn = document.getElementById('dialerTab');
 const phoneTabBtn = document.getElementById('phoneTab');
 const accountManager = document.getElementById('accountManager');
@@ -556,7 +557,8 @@ function prefillLoginDetails() {
 
 function loadContacts() {
   // Load contacts from localStorage or an API
-  const contacts = JSON.parse(localStorage.getItem('contacts')) || [];
+  let contacts = JSON.parse(localStorage.getItem('contacts')) || [];
+  contacts = contacts.sort((a, b) => a.name.localeCompare(b.name)); // Sort contacts by name
   for (const contact of contacts) {
     renderContact(contact);
   }
@@ -582,7 +584,7 @@ function renderContact(contact) {
   contactItem.innerHTML = `
     <span class="contactName">${contact.name}</span>
     <span class="contactNumber">${contact.number}</span>
-    <button class="btn btn-primary btn-sm callContactBtn">Call</button>
+    <button class="btn btn-success btn-sm callContactBtn" title="Call Contact"><i class="bi bi-telephone"></i></button>
   `;
   contactItem.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -968,6 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
   logger.debug(`Loading SIP UserAgent with host: ${userAgent.configuration.uri.host}`);
 
   if (statsPolling) {
+    let lastDebugLog = null;
     logger.debug('Starting stats polling');
     callNetStats.classList.remove('d-none'); // Hide stats initially
     statPollingInterval = setInterval(() => {
@@ -979,8 +982,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (remoteStream) {
           for (const track of remoteStream.getTracks()) {
             // logger.debug(`Remote track: ${track.kind} - ${track.label}`);
-            const debugMsg = (`Track stats:`, `Minimum Latency: ${track.stats.minimumLatency}, Latency: ${track.stats.latency}, Maximum Latency: ${track.stats.maximumLatency}, Average Latency: ${track.stats.averageLatency}`);
-            logger.debug(debugMsg);
+            const now = new Date();
+            if (!lastDebugLog) {
+              lastDebugLog = now;
+            }
+            if (now - lastDebugLog > 5000 && debug) { // Log every 5 seconds if debug is enabled
+              lastDebugLog = now;
+              const debugMsg = (`Track stats:`, `Minimum Latency: ${track.stats.minimumLatency}, Latency: ${track.stats.latency}, Maximum Latency: ${track.stats.maximumLatency}, Average Latency: ${track.stats.averageLatency}`);
+              logger.debug(debugMsg);
+            }
             if (!callNetStats.classList.contains('d-none')) {
               callNetStats.innerHTML = `
                 <div class="row">
@@ -1001,5 +1011,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     }, 1000); // Check every 1 second
+  }
+  const transferCallModalElement = document.getElementById('transferCallModal');
+  if (transferCallModalElement) {
+    transferCallModalElement.addEventListener('show.bs.modal', (event) => {
+      const button = event.relatedTarget; // Button that triggered the modal
+      const transferType = button.getAttribute('data-bs-transfer-type'); // Extract transfer type from data attribute
+      const modalTitle = transferCallModalElement.querySelector('.modal-title');
+      const transferToLabel = transferCallModalElement.querySelector('#transferToLabel');
+      const transferCallButton = transferCallModalElement.querySelector('#transferCallBtn');
+      const targetUri = document.getElementById('transferTo').value.trim();
+      logger.debug(`Transfer type: ${transferType}, Target URI: ${targetUri}`);
+      if (transferType === 'blind') {
+        modalTitle.textContent = 'Transfer Call';
+        transferCallButton.onclick = () => {
+          
+          if (targetUri) {
+            transferCall(true, targetUri); // Blind transfer
+          }
+          else {
+            alert('Please enter a valid SIP URI to transfer the call.');
+          }
+        }
+      } else if (transferType === 'attended') {
+        modalTitle.textContent = 'Conference Call';
+        transferToLabel.textContent = 'Conference With:';
+        transferCallButton.textContent = 'Conference';
+        transferCallButton.onclick = () => {
+          if (targetUri) {
+            transferCall(false, targetUri); // Attended transfer
+          } else {
+            alert('Please enter a valid SIP URI to transfer the call.');
+          }
+        }
+      }
+    });
   }
 });
